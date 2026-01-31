@@ -1,66 +1,65 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import { createClient } from "@/utils/supabase/server"
+import SidebarLeft from "@/components/SidebarLeft"
+import SidebarRight from "@/components/SidebarRight"
+import PostComposer from "@/components/PostComposer"
+import PostCard, { Post } from "@/components/PostCard"
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: posts } = await supabase
+    .from('posts')
+    .select('*, profiles(username), likes(user_id), comments(count)')
+    .order('created_at', { ascending: false })
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark font-display text-charcoal transition-colors duration-300">
+
+      <main className="max-w-[1280px] mx-auto flex gap-8 px-4 md:px-8 py-8">
+        {/* Left Sidebar */}
+        <SidebarLeft user={user} />
+
+        {/* Main Feed */}
+        <section className="flex-1 max-w-[680px] space-y-8">
+          {/* Composer Card */}
+          <PostComposer user={user} />
+
+          {/* Feed Filter */}
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-xl font-bold dark:text-white">Recent Posts</h2>
+            <div className="flex gap-4 text-sm font-medium text-slate-custom">
+              <button className="text-primary underline underline-offset-8 decoration-2">Global</button>
+              <button className="hover:text-charcoal dark:hover:text-white transition-colors">Following</button>
+            </div>
+          </div>
+
+          {/* Posts Feed */}
+          <div className="space-y-6">
+            {posts?.map((post: Post) => (
+              <PostCard key={post.id} post={post} currentUserId={user?.id} />
+            ))}
+            {!posts?.length && (
+              <div className="text-center py-12 text-slate-custom">
+                <span className="material-symbols-outlined text-4xl mb-2 opacity-50">rss_feed</span>
+                <p>No posts yet. Be the first to share something!</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Right Sidebar */}
+        <SidebarRight />
       </main>
-    </div>
-  );
+
+      {/* Mobile Nav (Visible only on small screens) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-around py-3 z-50 shadow-lg">
+        <button className="text-primary"><span className="material-symbols-outlined text-2xl fill-icon">home</span></button>
+        <button className="text-slate-custom"><span className="material-symbols-outlined text-2xl">explore</span></button>
+        <button className="bg-primary text-white size-10 rounded-full flex items-center justify-center -mt-8 border-4 border-background-light dark:border-background-dark shadow-xl"><span className="material-symbols-outlined">add</span></button>
+        <button className="text-slate-custom"><span className="material-symbols-outlined text-2xl">token</span></button>
+        <button className="text-slate-custom"><span className="material-symbols-outlined text-2xl">person</span></button>
+      </div>
+    </div >
+  )
 }
